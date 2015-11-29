@@ -1,22 +1,33 @@
-from subprocess import check_output, Popen, CalledProcessError
+from subprocess import check_output, CalledProcessError
 import os
 import sys
 import time
+import argparse
 
 __author__ = 'BluABK'
 
 if sys.platform == "win32":
     ffmpeg = "ffmpeg.exe"
+    ffmpeg_opts = "-n -vcodec copy -acodec copy"
 else:
     ffmpeg = "ffmpeg"
-path = "X:\\Twitch\\dump\\"
-#path = "X:/Twitch/dump/"
+    ffmpeg_opts = "-n -vcodec copy -acodec copy"
 # TODO: Replace with pyinotify
 
+parser = argparse.ArgumentParser(description='Twitch Local VOD Remux')
+#parser.add_argument('-v', '--verbose', action='count', help='enable verbose mode')
+parser.add_argument('-p', '--path', type=str, help='Path to vod directory')
+
+args = vars(parser.parse_args())
+
+if args['path']:
+    path = str(args['path'])
+else:
+    path = "."
 
 def file_in_use(filename):
     # TODO: Look for process etc
-    f = str(path + filename)
+    f = str(filename)
 
     # file modified method (quick and dirty)
     initial_stat = os.stat(f).st_mtime
@@ -28,10 +39,10 @@ def file_in_use(filename):
 
 
 def remux(filename, container_in='.ts', container_out='.mkv'):
-    outname = filename.split(container_in) + container_out
+    outname = str(filename.split(container_in)[0] + container_out)
     try:
         print "REMUX:\t%s --> %s" % (filename, outname)
-        check_output(ffmpeg + " -i \"%s\" -vcodec copy -acodec copy \"%s\"" % (filename, outname), shell=True)
+        check_output(ffmpeg + " -i \"%s\" %s \"%s\"" % (filename, ffmpeg_opts, outname), shell=True)
     except CalledProcessError:
         return False
     return True
@@ -69,6 +80,7 @@ if __name__ == "__main__":
             if file_in_use(f) is False:
                 ret = remux(f)
                 if ret:
-                    print "rm -rf %s" % f
-        #time.sleep(5)
+                    #print "rm -rf %s" % f
+                    os.rename(f, str(f + '.old'))
+        time.sleep(3600)
         exit(0)
