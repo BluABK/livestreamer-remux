@@ -93,4 +93,4 @@ if __name__ == "__main__":
                         print "Renaming %s to %s.old" % (f, f)
                         os.rename(f, str(f + '.old'))
         time.sleep(3600)
-        exit(0)
+
