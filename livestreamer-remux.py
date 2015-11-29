@@ -11,12 +11,13 @@ if sys.platform == "win32":
     ffmpeg_opts = "-n -vcodec copy -acodec copy"
 else:
     ffmpeg = "ffmpeg"
-    ffmpeg_opts = "-n -vcodec copy -acodec copy"
+    ffmpeg_opts = "-vcodec copy -acodec copy"
 # TODO: Replace with pyinotify
 
 parser = argparse.ArgumentParser(description='Twitch Local VOD Remux')
 #parser.add_argument('-v', '--verbose', action='count', help='enable verbose mode')
 parser.add_argument('-p', '--path', type=str, help='Path to vod directory')
+parser.add_argument('-c', '--clean', action='count', help='Automatically remove source file when done')
 
 args = vars(parser.parse_args())
 
@@ -24,6 +25,11 @@ if args['path']:
     path = str(args['path'])
 else:
     path = "."
+
+if args['clean']:
+    clean = True
+else:
+    clean = False
 
 def file_in_use(filename):
     # TODO: Look for process etc
@@ -80,7 +86,11 @@ if __name__ == "__main__":
             if file_in_use(f) is False:
                 ret = remux(f)
                 if ret:
-                    #print "rm -rf %s" % f
-                    os.rename(f, str(f + '.old'))
+                    if clean:
+                        print "Removing source file %s" % f
+                        os.remove(f)
+                    else:
+                        print "Renaming %s to %s.old" % (f, f)
+                        os.rename(f, str(f + '.old'))
         time.sleep(3600)
         exit(0)
